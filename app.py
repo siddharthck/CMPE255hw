@@ -111,4 +111,4 @@ def update_charts(selected_category, selected_service):
 # Run Dash app and save to HTML
 if __name__ == "__main__":
     print("Running Dash app")
-    app.run_server(debug=True)
+    app.run_server(debug=False)
