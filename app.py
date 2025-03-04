@@ -8,25 +8,31 @@ import folium
 from folium.plugins import HeatMap
 import streamlit as st
 from streamlit_folium import folium_static
-
+from google.oauth2 import service_account
+import toml
 import os
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/spartan/work/personal/255/hw1/sid-dev-452700-aae77c8d8ce6.json"
 
+# Load the TOML file
+config = toml.load(".streamlit/secrets.toml")
+
+# Set the credentials using the content of the TOML file
+credentials_info = config["google_cloud"]
+credentials = service_account.Credentials.from_service_account_info(credentials_info)
 
 # Initialize Dash app
 app = dash.Dash(__name__)
 
 # BigQuery client setup
-client = bigquery.Client(project = 'sid-dev-452700')
+client = bigquery.Client(credentials=credentials, project=credentials.project_id)
 
 # Define BigQuery dataset and table
-PROJECT_ID = 'sid-dev-452700'  # Replace with your GCP project ID
+PROJECT_ID = credentials.project_id  # Replace with your GCP project ID
 DATASET_ID = 'SanJoseServiceRequest'  # Replace with your dataset name
 TABLE_ID = 'SJSR'  # Replace with your table name
 
 # Load data from BigQuery
 query = f"""
-SELECT * FROM sid-dev-452700.SanJoseServiceRequest.SJSR """
+SELECT * FROM {PROJECT_ID}.{DATASET_ID}.{TABLE_ID} """
 df = client.query(query).to_dataframe()
 
 # Convert date columns
@@ -98,7 +104,7 @@ def update_charts(selected_category, selected_service):
 
     # Save processed data back to BigQuery
     destination_table = f"{PROJECT_ID}.{DATASET_ID}.processed_data"
-    df.to_gbq(destination_table, project_id=PROJECT_ID, if_exists='replace')
+    df.to_gbq(destination_table, project_id=PROJECT_ID, if_exists='replace', credentials=credentials)
 
     return bar_fig, trend_fig, html.Iframe(srcDoc=map_html, width='100%', height='600')
 
